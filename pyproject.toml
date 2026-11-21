@@ -1,0 +1,22 @@
+[project]
+name = "egide"
+version = "0.1.0"
+description = "Égide : tout ce à quoi tu as droit avec tes cartes, ta mutuelle et tes assurances"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "uvicorn>=0.29"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+egide = "egide.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+egide = ["static/*"]

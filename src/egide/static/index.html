@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Égide</title>
+<meta name="description" content="Tout ce à quoi tu as droit avec tes cartes, ta mutuelle et tes assurances">
+<link rel="icon" href="/icone.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0f3d2e">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* Égide, le bouclier : une bande vert bouteille où l'on presse le tampon de ce qui arrive ; dessous, le dossier de
+   toutes les garanties concernées, chacune tamponnée (couvert, sous condition, à vérifier), puis le trousseau des
+   contrats, les doublons et les trous, les numéros à garder. Le texte est en Atkinson Hyperlegible : le petit
+   caractère des contrats, enfin lisible. */
+:root {
+  --fond: #edf1ea; --papier: #ffffff; --creux: #f4f7f2; --encre: #13261f; --encre-2: #45574f; --encre-3: #73847c;
+  --trait: #d6dfd6; --bouteille: #0f3d2e; --bouteille-2: #1a5a44; --sur-bouteille: #eef4ef; --laiton: #c9a44c; --laiton-clair: #f3e7bf;
+  --couvert: #2e7d4f; --condition: #a96d12; --verifier: #6b7a73; --absent: #b3412f; --perso: #3b5ea8; --piste: #8a6a1c;
+  --focus: #c9a44c; --voile: rgba(10, 30, 22, .5);
+  --affiche: "Syne", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --texte: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #0a1511; --papier: #11211a; --creux: #172b22; --encre: #e5eee8; --encre-2: #a9bab1; --encre-3: #7d8f86;
+    --trait: #22372d; --bouteille: #0b2c21; --bouteille-2: #154736; --sur-bouteille: #e5eee8; --laiton: #d8b75f; --laiton-clair: #3a3220;
+    --couvert: #57b47e; --condition: #e0a245; --verifier: #93a39b; --absent: #e2735f; --perso: #87a6ef; --piste: #d8b75f;
+    --voile: rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--fond); color: var(--encre); font-family: var(--texte); font-size: 17px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.page { width: min(100%, 1120px); margin: 0 auto; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+.cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* --- la bande ---------------------------------------------------------------- */
+.bande { background: var(--bouteille); color: var(--sur-bouteille); padding: calc(18px + env(safe-area-inset-top, 0px)) 0 34px;
+  background-image: radial-gradient(circle at 92% -20%, rgba(201, 164, 76, .22), transparent 42%); }
+.tete { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; }
+.marque { display: flex; align-items: center; gap: 14px; }
+.marque h1 { margin: 0; font-family: var(--affiche); font-weight: 800; font-size: 2.1rem; letter-spacing: -.02em; line-height: 1; }
+.marque p { margin: 3px 0 0; font-size: .95rem; opacity: .82; }
+.profils { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.profils select { background: rgba(255, 255, 255, .1); border: 1.5px solid rgba(255, 255, 255, .28); color: var(--sur-bouteille); border-radius: 999px; padding: 7px 14px; font-weight: 700; }
+.profils select option { color: #13261f; }
+.bouton-clair { border: 1.5px solid rgba(255, 255, 255, .3); background: transparent; color: var(--sur-bouteille); border-radius: 999px; padding: 7px 14px; font-weight: 700; }
+.question { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 360px); gap: 14px 28px; align-items: end; margin: 34px 0 18px; }
+.question h2 { margin: 0; font-family: var(--affiche); font-weight: 800; font-size: clamp(2.2rem, 5.6vw, 3.9rem); line-height: .98; letter-spacing: -.035em; }
+.question h2 span { color: var(--laiton); }
+.question p { margin: 10px 0 0; opacity: .85; max-width: 56ch; }
+.cherche { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, .1); border: 1.5px solid rgba(255, 255, 255, .25); border-radius: 14px; padding: 4px 6px 4px 14px; }
+.cherche input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--sur-bouteille); padding: 10px 0; outline: none; }
+.cherche input::placeholder { color: rgba(238, 244, 239, .6); }
+.cherche:focus-within { outline: 3px solid var(--laiton); outline-offset: 2px; }
+.tampons { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 10px; }
+.tampon { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 4px 10px; align-items: center; text-align: left;
+  border: 0; background: rgba(255, 255, 255, .06); color: var(--sur-bouteille); border-radius: 12px; padding: 12px 12px 11px; min-height: 74px; }
+.tampon::before { content: ""; position: absolute; inset: 4px; border: 1.5px dashed rgba(201, 164, 76, .55); border-radius: 9px; pointer-events: none; }
+.tampon svg { grid-row: 1 / span 2; stroke: var(--laiton); }
+.tampon b { font-weight: 700; font-size: .93rem; line-height: 1.2; }
+.tampon small { font-size: .78rem; opacity: .7; }
+.tampon:hover { background: rgba(255, 255, 255, .12); }
+.tampon[aria-pressed="true"] { background: var(--laiton); color: #0f3d2e; transform: rotate(-1.2deg); }
+.tampon[aria-pressed="true"]::before { border-color: rgba(15, 61, 46, .6); }
+.tampon[aria-pressed="true"] svg { stroke: #0f3d2e; }
+.tampon.vide { opacity: .42; }
+@media (prefers-reduced-motion: no-preference) { .tampon { transition: transform .15s ease, background .15s ease; } .tampon:active { transform: scale(.97) rotate(-1.2deg); } }
+
+/* --- le dossier ------------------------------------------------------------------ */
+.dossier { margin-top: -18px; background: var(--papier); border-radius: 22px; padding: 26px 28px 28px; box-shadow: 0 20px 50px -34px rgba(10, 30, 22, .55); position: relative; }
+.dossier h2 { margin: 0; font-family: var(--affiche); font-weight: 800; font-size: 1.7rem; letter-spacing: -.02em; }
+.dossier .sous { margin: 4px 0 0; color: var(--encre-2); }
+.reflexe { margin: 18px 0 6px; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; background: var(--laiton-clair); border-radius: 16px; padding: 16px 18px; }
+.reflexe svg { stroke: var(--bouteille); }
+@media (prefers-color-scheme: dark) { .reflexe svg { stroke: var(--laiton); } }
+.reflexe b { display: block; font-family: var(--affiche); font-weight: 700; font-size: .9rem; margin-bottom: 2px; }
+.reflexe p { margin: 0; font-size: 1.05rem; }
+.garanties { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-top: 18px; }
+.garantie { position: relative; border: 1.5px solid var(--trait); border-radius: 16px; padding: 16px 18px 14px; display: grid; gap: 8px; align-content: start; background: var(--papier); }
+.garantie.absent { opacity: .55; }
+.garantie .qui { margin: 0; font-size: .85rem; color: var(--encre-2); display: flex; align-items: center; gap: 8px; padding-right: 132px; }
+.garantie .qui i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.garantie h3 { margin: 0; font-size: 1.12rem; line-height: 1.25; padding-right: 96px; }
+.garantie .resume { margin: 0; color: var(--encre-2); }
+.garantie .montant { margin: 2px 0 0; font-family: var(--affiche); font-weight: 700; font-size: 1.12rem; letter-spacing: -.01em; line-height: 1.3; }
+.lignes { margin: 0; display: grid; gap: 5px; font-size: .93rem; }
+.lignes div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; }
+.lignes dt { color: var(--encre-3); font-weight: 700; }
+.lignes dd { margin: 0; }
+.contact { display: flex; flex-wrap: wrap; gap: 6px; }
+.contact a { text-decoration: none; background: var(--creux); border: 1px solid var(--trait); border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: .9rem; white-space: nowrap; }
+.contact span { font-size: .9rem; color: var(--encre-2); }
+.source { margin: 0; font-size: .8rem; color: var(--encre-3); }
+.source a { color: var(--encre-3); }
+.actions-g { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.petit { border: 1.5px solid var(--trait); background: transparent; border-radius: 999px; padding: 4px 11px; font-size: .84rem; font-weight: 700; color: var(--encre-2); }
+.petit:hover { border-color: var(--encre-3); color: var(--encre); }
+.note { margin: 0; font-size: .9rem; background: var(--creux); border-radius: 10px; padding: 6px 10px; }
+/* le tampon de chaque garantie */
+.cachet { position: absolute; top: 12px; right: 12px; transform: rotate(7deg); font-family: var(--affiche); font-weight: 800; font-size: .62rem;
+  letter-spacing: .03em; text-transform: uppercase; padding: 4px 7px; border: 2.5px solid currentColor; border-radius: 6px; line-height: 1.15;
+  box-shadow: inset 0 0 0 1.5px var(--papier), inset 0 0 0 3px currentColor; text-align: center; width: max-content; max-width: 124px; opacity: .92; }
+.cachet.couvert, .cachet.verifie { color: var(--couvert); }
+.cachet.condition { color: var(--condition); }
+.cachet.verifier { color: var(--verifier); }
+.cachet.piste { color: var(--piste); }
+.cachet.absent { color: var(--absent); }
+.cachet.perso { color: var(--perso); }
+.vide-dossier { margin: 16px 0 0; color: var(--encre-2); }
+.suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.suggestions button { border: 1.5px solid var(--trait); background: var(--creux); border-radius: 999px; padding: 6px 14px; font-weight: 700; }
+
+/* --- sections ---------------------------------------------------------------------- */
+.section { margin-top: 46px; }
+.section > h2 { margin: 0 0 4px; font-family: var(--affiche); font-weight: 800; font-size: 1.75rem; letter-spacing: -.02em; }
+.section > p.sous { margin: 0 0 16px; color: var(--encre-2); max-width: 70ch; }
+.trousseau { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.objet { all: unset; box-sizing: border-box; cursor: pointer; display: grid; gap: 10px; }
+.objet:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 16px; }
+.objet .infos { display: flex; justify-content: space-between; gap: 8px; font-size: .9rem; color: var(--encre-2); padding: 0 4px; }
+.objet .infos b { color: var(--encre); }
+.carte-b { position: relative; aspect-ratio: 1.586; border-radius: 16px; padding: 16px 18px; color: #fff; display: grid; align-content: space-between; overflow: hidden;
+  box-shadow: 0 16px 30px -20px rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.carte-b::after { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, rgba(255, 255, 255, .16), transparent 40%); pointer-events: none; }
+.carte-b .f { font-family: var(--affiche); font-weight: 800; font-size: 1.05rem; letter-spacing: -.01em; }
+.carte-b .n { font-weight: 700; font-size: .95rem; opacity: .92; }
+.carte-b .puce { width: 38px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #e9d18a, #b38a2e); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2); }
+.carte-b .bas { display: flex; justify-content: space-between; align-items: end; gap: 10px; min-width: 0; }
+.carte-b .f, .carte-b .n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carte-b .puce, .carte-b .visa { flex: none; }
+.carte-b .visa.long { font-size: .9rem; }
+.carte-b .visa { font-family: var(--affiche); font-weight: 800; font-style: italic; font-size: 1.2rem; }
+.c-bleu { background: linear-gradient(135deg, #1d4f9c, #0d2f66); }
+.c-nuit-rose { background: linear-gradient(135deg, #24212b, #0d0c11); }
+.c-nuit-rose .f { color: #ff6fa8; }
+.c-vert { background: linear-gradient(135deg, #2c7a55, #145238); }
+.c-turquoise { background: linear-gradient(135deg, #1f8c8a, #0f5c62); }
+.c-rouge { background: linear-gradient(135deg, #b4332c, #78150f); }
+.c-laiton { background: linear-gradient(135deg, #c9a44c, #8a6a1c); color: #1c1407; }
+.c-gris { background: linear-gradient(135deg, #5a6b63, #33413a); }
+.attestation { position: relative; aspect-ratio: 1.586; border-radius: 6px; padding: 16px 18px; background: var(--papier); border: 1.5px solid var(--trait);
+  display: grid; align-content: space-between; box-shadow: 0 14px 26px -22px rgba(0, 0, 0, .5); overflow: hidden; }
+.attestation::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; }
+.attestation.c-bleu::before { background: #1d4f9c; } .attestation.c-rouge::before { background: #b4332c; } .attestation.c-vert::before { background: #2c7a55; }
+.attestation.c-turquoise::before { background: #1f8c8a; } .attestation.c-laiton::before { background: #c9a44c; } .attestation.c-gris::before { background: #5a6b63; }
+.attestation { background-image: none; color: var(--encre); }
+.attestation .t { font-size: .75rem; font-weight: 700; color: var(--encre-3); letter-spacing: .04em; }
+.attestation .f { font-family: var(--affiche); font-weight: 800; font-size: 1.05rem; }
+.attestation .n { font-weight: 700; color: var(--encre-2); }
+.attestation .sceau { position: absolute; right: 14px; top: 12px; width: 44px; height: 44px; border-radius: 50%; border: 2px dashed var(--laiton); display: grid; place-items: center; transform: rotate(-12deg); }
+.ajouter-objet { all: unset; box-sizing: border-box; cursor: pointer; aspect-ratio: 1.586; border: 2px dashed var(--trait); border-radius: 16px; display: grid; place-items: center; text-align: center; color: var(--encre-2); font-weight: 700; padding: 16px; }
+.ajouter-objet:hover { border-color: var(--encre-3); color: var(--encre); }
+.ajouter-objet:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.bloc { background: var(--papier); border-radius: 18px; padding: 18px 20px; }
+.bloc h3 { margin: 0 0 10px; font-family: var(--affiche); font-weight: 700; font-size: 1.1rem; }
+.bloc ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.bloc li b { display: block; }
+.bloc li span { color: var(--encre-2); font-size: .95rem; }
+.offres { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.offres em { font-style: normal; font-size: .85rem; background: var(--creux); border-radius: 999px; padding: 1px 9px; }
+.offres em.meilleur { background: var(--laiton-clair); font-weight: 700; }
+.numeros { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.numero { background: var(--papier); border-radius: 14px; padding: 12px 16px; display: grid; gap: 2px; }
+.numero b { font-size: .88rem; color: var(--encre-2); }
+.numero span { font-size: .96rem; }
+.numero a { font-family: var(--affiche); font-weight: 700; font-size: 1.15rem; text-decoration: none; letter-spacing: -.01em; }
+.a-verifier { background: var(--papier); border-radius: 18px; padding: 6px 20px; }
+.a-verifier li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--trait); }
+.a-verifier li:last-child { border-bottom: 0; }
+.a-verifier ul { margin: 0; padding: 0; list-style: none; }
+.a-verifier li span { display: block; font-size: .9rem; color: var(--encre-2); }
+.pied { margin: 50px 0 60px; color: var(--encre-3); font-size: .9rem; max-width: 80ch; }
+.pied p { margin: 0 0 6px; }
+
+/* --- feuilles ---------------------------------------------------------------------- */
+dialog { border: 0; padding: 0; background: var(--fond); color: var(--encre); width: min(100% - 24px, 760px); max-height: calc(100dvh - 32px); border-radius: 22px; overflow: auto; }
+dialog::backdrop { background: var(--voile); }
+.f-tete { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; background: var(--bouteille); color: var(--sur-bouteille); }
+.f-tete h2 { margin: 0; font-family: var(--affiche); font-weight: 700; font-size: 1.15rem; }
+.f-corps { padding: 18px 20px 26px; display: grid; gap: 14px; }
+.champ { display: grid; gap: 4px; font-weight: 700; font-size: .92rem; color: var(--encre-2); }
+.champ input, .champ textarea, .champ select { border: 1.5px solid var(--trait); background: var(--papier); border-radius: 10px; padding: 9px 11px; color: var(--encre); font-weight: 400; }
+.champ textarea { min-height: 70px; resize: vertical; }
+.grille-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.plein { border: 0; background: var(--bouteille); color: var(--sur-bouteille); border-radius: 12px; padding: 10px 18px; font-weight: 700; justify-self: start; }
+.danger { border: 1.5px solid var(--absent); color: var(--absent); background: transparent; border-radius: 12px; padding: 8px 14px; font-weight: 700; }
+.choix-produits { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.choix-produits button { border: 1.5px solid var(--trait); background: var(--papier); border-radius: 14px; padding: 10px 12px; text-align: left; }
+.choix-produits button b { display: block; }
+.choix-produits button span { font-size: .85rem; color: var(--encre-2); }
+.situations-choix { display: flex; flex-wrap: wrap; gap: 6px; }
+.situations-choix label { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--trait); border-radius: 999px; padding: 3px 10px; font-weight: 400; font-size: .85rem; background: var(--papier); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--bouteille); color: var(--sur-bouteille);
+  border-radius: 14px; padding: 12px 18px; z-index: 10; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); max-width: calc(100% - 32px); }
+
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .question { grid-template-columns: minmax(0, 1fr); margin-top: 24px; }
+  .tampons { grid-template-columns: 1fr 1fr; }
+  .dossier { padding: 20px 16px; border-radius: 18px; }
+  .garanties { grid-template-columns: minmax(0, 1fr); }
+  .deux, .grille-2 { grid-template-columns: minmax(0, 1fr); }
+  .profils { margin-left: 0; }
+  dialog { width: 100%; max-width: 100%; margin: auto 0 0; border-radius: 22px 22px 0 0; max-height: 92dvh; }
+}
+</style>
+</head>
+<body>
+<header class="bande">
+  <div class="page">
+    <div class="tete">
+      <div class="marque">
+        <svg width="46" height="52" viewBox="0 0 46 52" aria-hidden="true"><path d="M23 2l20 7v15c0 13-9 22-20 26C12 46 3 37 3 24V9z" fill="var(--laiton)"/><path d="M23 9l13 4.6V24c0 8.6-5.6 14.8-13 18.4C15.6 38.8 10 32.6 10 24V13.6z" fill="var(--bouteille)"/><path d="M16.5 25.5l4.5 4.5 9-9.5" fill="none" stroke="var(--laiton)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><h1>Égide</h1><p id="resume">Tout ce à quoi tu as droit.</p></div>
+      </div>
+      <div class="profils">
+        <label class="cache" for="profil">Profil</label>
+        <select id="profil"></select>
+        <button class="bouton-clair" id="nouveau-profil" type="button">+ Profil</button>
+      </div>
+    </div>
+    <div class="question">
+      <div>
+        <h2>Il t'arrive <span>quoi</span>&nbsp;?</h2>
+        <p>Presse le tampon de ce qui t'arrive : Égide rassemble ce que chaque carte, mutuelle et assurance prévoit, qui appeler et dans quel délai.</p>
+      </div>
+      <label class="cherche" for="recherche">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <span class="cache">Chercher une garantie</span>
+        <input id="recherche" type="search" placeholder="ou cherche : franchise, avocat, lentilles…" autocomplete="off">
+      </label>
+    </div>
+    <div class="tampons" id="tampons" role="group" aria-label="Ce qui t'arrive"></div>
+  </div>
+</header>
+
+<main class="page">
+  <section class="dossier" id="dossier" aria-live="polite"></section>
+
+  <section class="section" aria-labelledby="t-trousseau">
+    <h2 id="t-trousseau">Le trousseau</h2>
+    <p class="sous" id="sous-trousseau">Les contrats que tu as. Touche-en un pour voir tout ce qu'il couvre, noter sa référence ou corriger une garantie.</p>
+    <div class="trousseau" id="trousseau"></div>
+  </section>
+
+  <section class="section" aria-labelledby="t-analyse">
+    <h2 id="t-analyse">En double, et ce qui manque</h2>
+    <p class="sous">Plusieurs contrats couvrent parfois la même chose : il suffit d'utiliser le meilleur. D'autres risques ne sont couverts par aucun.</p>
+    <div class="deux">
+      <div class="bloc"><h3>En double</h3><ul id="doublons"></ul></div>
+      <div class="bloc"><h3>Ce qui manque</h3><ul id="trous"></ul></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="t-numeros">
+    <h2 id="t-numeros">Les numéros à garder</h2>
+    <p class="sous">Enregistre-les dans ton téléphone : les assistances se joignent 24h/24, avant d'engager le moindre frais.</p>
+    <div class="numeros" id="numeros"></div>
+  </section>
+
+  <section class="section" aria-labelledby="t-verifier">
+    <h2 id="t-verifier">À vérifier dans tes contrats</h2>
+    <p class="sous">Ces garanties viennent d'une source tierce ou sont habituelles pour ce genre de contrat. Coche-les une fois confirmées dans tes conditions particulières.</p>
+    <div class="a-verifier"><ul id="verifier"></ul></div>
+  </section>
+
+  <footer class="pied">
+    <p>Les montants viennent des notices et tableaux officiels cités sous chaque garantie, à la date indiquée. Ton contrat fait foi : en cas de doute, appelle avant d'engager des frais.</p>
+    <p>Tout reste sur ce PC : Égide ne contacte aucun assureur et n'envoie rien.</p>
+  </footer>
+</main>
+
+<dialog id="feuille" aria-labelledby="feuille-titre">
+  <div class="f-tete"><h2 id="feuille-titre"></h2><button class="bouton-clair" type="button" data-fermer>Fermer</button></div>
+  <div class="f-corps" id="feuille-corps"></div>
+</dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+function el(tag, attrs = {}, ...enfants) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k === "html") e.innerHTML = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of enfants.flat()) if (c != null && c !== false) e.append(c instanceof Node ? c : document.createTextNode(c));
+  return e;
+}
+function localGet(k) { try { return localStorage.getItem("egide." + k); } catch { return null; } }
+function localSet(k, v) { try { localStorage.setItem("egide." + k, v); } catch {} }
+
+const ICONES = {
+  valise: "M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M4 7h16v12H4zM9 7v12M15 7v12",
+  croix: "M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z",
+  calendrier: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5M9 14l6 4M15 14l-6 4",
+  bagage: "M7 7h10v12H7zM10 7V4h4v3M9 21v-2M15 21v-2",
+  horloge: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  cle: "M14 10a4 4 0 1 0-1.2 2.8L21 21M17 17l2-2M19 19l1.5-1.5",
+  flocon: "M12 2v20M3.5 7l17 10M20.5 7l-17 10M9 4l3 3 3-3M9 20l3-3 3 3",
+  voiture: "M5 16l1.5-5h11L19 16M4 16h16v3H4zM7 19v1.5M17 19v1.5M7.5 13.5h.01M16.5 13.5h.01",
+  maison: "M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6",
+  main: "M7 11V5a1.5 1.5 0 0 1 3 0v5M10 9V4a1.5 1.5 0 0 1 3 0v5M13 9V5a1.5 1.5 0 0 1 3 0v6M16 10a1.5 1.5 0 0 1 3 0v4a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.6L7 14",
+  lunettes: "M6.5 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM17.5 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM10 13.5h4M3 13.5L4.5 7H7M21 13.5L19.5 7H17",
+  dent: "M7 3c-2.5 0-4 2-4 4.5 0 3 1.5 5 2 8 .4 2.5 1 5.5 2.5 5.5s1.6-4 2.5-6c.5-1 1.5-1 2 0 .9 2 1 6 2.5 6s2.1-3 2.5-5.5c.5-3 2-5 2-8C21 5 19.5 3 17 3c-2 0-3 1-5 1S9 3 7 3z",
+  oreille: "M8 9a5 5 0 0 1 10 0c0 3-3 4-3.5 6.5S12.5 21 10 21M11 9a2 2 0 0 1 4 0c0 1.5-1.5 2-2 3",
+  stethoscope: "M5 3v6a5 5 0 0 0 10 0V3M10 14v2a4 4 0 0 0 8 0v-2M18 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
+  lit: "M3 6v14M3 16h18v4M21 16v-3a3 3 0 0 0-3-3h-8v6M7 12.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
+  coeur: "M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10zM9 11h2l1-2 1.5 4 1-2H16",
+  balance: "M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z",
+  carte: "M3 6h18v12H3zM3 10h18M7 15h4M17 3l-4 18",
+  berceau: "M4 11h16a8 8 0 0 1-16 0zM4 11a8 8 0 0 1 8-8v8M8 19l-1 2M16 19l1 2",
+  parapluie: "M3 12a9 9 0 0 1 18 0zM12 12v7a2 2 0 0 0 4 0M12 3v1",
+  soleil: "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
+  bouclier: "M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6zM9 12l2 2 4-4",
+};
+function icone(nom, taille = 26) {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  for (const [k, v] of Object.entries({ width: taille, height: taille, viewBox: "0 0 24 24", fill: "none", "stroke-width": "1.7",
+    "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) s.setAttribute(k, v);
+  const chemin = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  chemin.setAttribute("d", ICONES[nom] || ICONES.bouclier);
+  s.append(chemin);
+  return s;
+}
+
+const S = { etat: null, profil: Number(localGet("profil")) || null, situation: null, contrat: null, recherche: "" };
+const CACHETS = {
+  notice: (g) => g.conditions ? ["condition", "Sous condition"] : ["couvert", "Couvert"],
+  "source-tierce": () => ["verifier", "À vérifier"], typique: () => ["verifier", "À vérifier"], piste: () => ["piste", "Piste"],
+  verifie: () => ["verifie", "Vérifié"], absent: () => ["absent", "Non couvert"], perso: () => ["perso", "Ajouté"],
+};
+const COULEURS_PASTILLE = { bleu: "#1d4f9c", "nuit-rose": "#ff6fa8", vert: "#2c7a55", turquoise: "#1f8c8a", rouge: "#b4332c", laiton: "#c9a44c", gris: "#5a6b63" };
+const ORIGINE = { notice: "lu dans la notice officielle", "source-tierce": "source tierce, notice officielle non lue", typique: "garantie habituelle de ce type de contrat",
+  piste: "piste à confirmer", verifie: "vérifié dans ton contrat", absent: "absent de ton contrat", perso: "ajouté par toi" };
+
+// --- données ---------------------------------------------------------------------------
+async function api(url, options = {}) {
+  const r = await fetch(url, { headers: { "Content-Type": "application/json" }, ...options });
+  if (!r.ok) { let m = `Erreur ${r.status}`; try { const j = await r.json(); if (typeof j.detail === "string") m = j.detail; } catch {} throw new Error(m); }
+  return r.json();
+}
+async function charger() {
+  S.etat = await api(`/api/etat${S.profil ? `?profil=${S.profil}` : ""}`);
+  if (S.etat.profil) { S.profil = S.etat.profil.id; localSet("profil", S.profil); }
+  afficher();
+}
+function toutes() {
+  const sortie = [];
+  for (const c of S.etat.contrats) for (const g of c.droits) sortie.push({ g, c });
+  return sortie;
+}
+const telephones = (texte) => [...String(texte || "").matchAll(/(\+33\s?\d(?:[\s.]?\d{2}){4}|0\s?\d{3}(?:[\s.]?\d{3}){2}|0\d(?:[\s.]?\d{2}){4})/g)].map((m) => m[0]);
+
+// --- affichage --------------------------------------------------------------------------
+function afficher() {
+  const e = S.etat;
+  $("#profil").replaceChildren(...e.profils.map((p) => el("option", { value: p.id, selected: p.id === S.profil || null }, p.nom)));
+  const liste = toutes();
+  const aVerifier = liste.filter(({ g }) => ["source-tierce", "typique", "piste"].includes(g.statut));
+  $("#resume").textContent = e.profil
+    ? `Tout ce à quoi ${e.profil.nom === "Moi" ? "tu as" : `« ${e.profil.nom} » a`} droit : ${e.contrats.length} contrats, ${liste.filter(({ g }) => g.statut !== "absent").length} garanties, ${aVerifier.length} à vérifier.`
+    : "Tout ce à quoi tu as droit.";
+  // tampons
+  const parSituation = {};
+  for (const { g } of liste) if (g.statut !== "absent") for (const s of g.situations) parSituation[s] = (parSituation[s] || 0) + 1;
+  $("#tampons").replaceChildren(...e.situations.map(([cle, libelle, ic]) => {
+    const n = parSituation[cle] || 0;
+    return el("button", { class: "tampon" + (n ? "" : " vide"), type: "button", "aria-pressed": String(S.situation === cle),
+      onclick: () => { S.situation = S.situation === cle ? null : cle; S.contrat = null; S.recherche = ""; $("#recherche").value = ""; afficher(); if (S.situation) $("#dossier").scrollIntoView({ behavior: "smooth", block: "start" }); } },
+      icone(ic), el("b", {}, libelle), el("small", {}, n ? `${n} garantie${n > 1 ? "s" : ""}` : "rien pour l'instant"));
+  }));
+  afficherDossier(liste);
+  afficherTrousseau();
+  afficherAnalyse();
+  afficherNumeros(liste);
+  afficherAVerifier(aVerifier);
+}
+
+function carteGarantie({ g, c }) {
+  const [cls, mot] = (CACHETS[g.statut] || CACHETS.perso)(g);
+  const lignes = [["Franchise", g.franchise], ["Condition", g.conditions], ["Comment faire", g.demarche], ["Délai", g.delai]].filter(([, v]) => v);
+  const tels = telephones(g.contact);
+  return el("article", { class: "garantie" + (g.statut === "absent" ? " absent" : "") },
+    el("span", { class: `cachet ${cls}` }, mot),
+    el("p", { class: "qui" }, el("i", { style: `background:${COULEURS_PASTILLE[c.couleur] || "#5a6b63"}` }), `${c.fournisseur} · ${c.nom}`),
+    el("h3", {}, g.titre),
+    g.resume ? el("p", { class: "resume" }, g.resume) : null,
+    g.plafond ? el("p", { class: "montant" }, g.plafond) : null,
+    lignes.length ? el("dl", { class: "lignes" }, lignes.map(([k, v]) => el("div", {}, el("dt", {}, k), el("dd", {}, v)))) : null,
+    g.contact ? el("div", { class: "contact" }, tels.map((t) => el("a", { href: `tel:${t.replace(/[\s.]/g, "")}` }, `☎ ${t}`)), el("span", {}, g.contact)) : null,
+    g.notes ? el("p", { class: "note" }, "Ta note : ", g.notes) : null,
+    el("p", { class: "source" }, `D'où ça vient : ${ORIGINE[g.statut] || ""}`, c.source_url && !["perso"].includes(g.statut) ? [" · ", el("a", { href: c.source_url, target: "_blank", rel: "noopener noreferrer" }, c.source_date || "source")] : null),
+    el("div", { class: "actions-g" },
+      g.statut !== "verifie" ? el("button", { class: "petit", type: "button", onclick: () => regler(g.id, { statut: "verifie" }, "Noté : vérifié dans ton contrat") }, "Vérifié dans mon contrat") : null,
+      g.statut !== "absent" ? el("button", { class: "petit", type: "button", onclick: () => regler(g.id, { statut: "absent" }, "Noté : pas dans ton contrat") }, "Pas dans mon contrat") : null,
+      ["verifie", "absent"].includes(g.statut) ? el("button", { class: "petit", type: "button", onclick: () => regler(g.id, { statut: g.statut_origine || "perso" }, "Remis comme au départ") }, "Annuler") : null,
+      el("button", { class: "petit", type: "button", onclick: () => editerGarantie(g, c) }, "Corriger")));
+}
+function afficherDossier(liste) {
+  const zone = $("#dossier"), e = S.etat;
+  const visibles = (g) => g.statut !== "absent" || S.contrat;
+  let titre, sous, choix, reflexe = null;
+  if (S.recherche) {
+    const mots = S.recherche.toLocaleLowerCase("fr").normalize("NFD").replace(/\p{Diacritic}/gu, "").split(/\s+/).filter(Boolean);
+    const net = (t) => String(t || "").toLocaleLowerCase("fr").normalize("NFD").replace(/\p{Diacritic}/gu, "");
+    choix = liste.filter(({ g, c }) => mots.every((m) => net([g.titre, g.resume, g.plafond, g.conditions, g.demarche, c.nom, c.fournisseur].join(" ")).includes(m)));
+    titre = `« ${S.recherche} »`; sous = `${choix.length} garantie${choix.length > 1 ? "s" : ""} trouvée${choix.length > 1 ? "s" : ""}`;
+  } else if (S.contrat && !e.contrats.some((x) => x.id === S.contrat)) {
+    S.contrat = null;
+    return afficherDossier(liste);
+  } else if (S.contrat) {
+    const c = e.contrats.find((x) => x.id === S.contrat);
+    choix = liste.filter(({ c: x }) => x.id === S.contrat);
+    titre = c ? `${c.fournisseur} · ${c.nom}` : "Contrat"; sous = "Tout ce que couvre ce contrat";
+  } else if (S.situation) {
+    const [, libelle] = e.situations.find(([k]) => k === S.situation);
+    choix = liste.filter(({ g }) => g.situations.includes(S.situation) && visibles(g));
+    titre = libelle; sous = `${choix.length} garantie${choix.length > 1 ? "s" : ""} dans ${new Set(choix.map(({ c }) => c.id)).size} contrat${new Set(choix.map(({ c }) => c.id)).size > 1 ? "s" : ""}`;
+    reflexe = e.reflexes[S.situation];
+  } else {
+    zone.replaceChildren(el("h2", {}, "Le dossier"), el("p", { class: "sous" }, "Choisis ce qui t'arrive, en haut, ou cherche une garantie : le dossier rassemble tout ce qui te couvre."),
+      el("div", { class: "suggestions" }, ["voyage", "panne", "optique", "maison", "hospitalisation"].map((k) => {
+        const s = e.situations.find(([x]) => x === k);
+        return s ? el("button", { type: "button", onclick: () => { S.situation = k; afficher(); } }, s[1]) : null;
+      })));
+    return;
+  }
+  const ordre = { notice: 0, verifie: 0, "source-tierce": 1, typique: 2, piste: 3, perso: 1, absent: 9 };
+  choix.sort((a, b) => (ordre[a.g.statut] - ordre[b.g.statut]) || (b.g.valeur || 0) - (a.g.valeur || 0));
+  zone.replaceChildren(
+    el("h2", {}, titre), el("p", { class: "sous" }, sous),
+    reflexe ? el("div", { class: "reflexe" }, icone("bouclier", 40), el("div", {}, el("b", {}, "Le bon réflexe"), el("p", {}, reflexe))) : null,
+    choix.length ? el("div", { class: "garanties" }, choix.map(carteGarantie))
+      : el("p", { class: "vide-dossier" }, S.recherche ? "Rien ne correspond. Essaie un autre mot."
+        : S.contrat ? "Ce contrat n'a pas encore de garanties. Ajoute-les avec « + Ajouter une garantie » : ce qu'il couvre, le plafond, qui appeler."
+        : "Aucun de tes contrats ne prévoit rien pour ça. Si tu sais qu'un contrat le couvre, ajoute la garantie depuis le trousseau."),
+    S.contrat ? formulaireContrat(e.contrats.find((x) => x.id === S.contrat)) : null);
+}
+
+function reseau(c) {
+  const t = `${c.nom} ${c.fournisseur}`;
+  return /visa/i.test(t) ? "VISA" : /master/i.test(t) ? "mastercard" : /amex|american/i.test(t) ? "AMEX" : /\bcb\b/i.test(t) ? "CB" : "";
+}
+function objetContrat(c) {
+  const n = c.droits.filter((g) => g.statut !== "absent").length, v = c.droits.filter((g) => ["source-tierce", "typique", "piste"].includes(g.statut)).length;
+  const cls = `c-${c.couleur || "gris"}`;
+  const visuel = c.type === "carte"
+    ? el("div", { class: `carte-b ${cls}` }, el("div", { class: "bas" }, el("span", { class: "f" }, c.fournisseur), el("span", { class: "puce" })),
+        el("div", { class: "bas" }, el("span", { class: "n" }, c.nom), el("span", { class: "visa" + (reseau(c).length > 4 ? " long" : "") }, reseau(c))))
+    : el("div", { class: `attestation ${cls}` }, el("span", { class: "t" }, { mutuelle: "Mutuelle", regime: "Régime santé", assurance: "Attestation d'assurance", statut: "Statut" }[c.type] || "Contrat"),
+        el("div", {}, el("div", { class: "f" }, c.fournisseur), el("div", { class: "n" }, c.nom)), el("span", { class: "sceau" }, icone("bouclier", 22)));
+  return el("button", { class: "objet", type: "button", onclick: () => ouvrirContrat(c) }, visuel,
+    el("span", { class: "infos" }, el("span", {}, el("b", {}, `${n} garantie${n > 1 ? "s" : ""}`), v ? ` · ${v} à vérifier` : ""), el("span", {}, c.reference ? `n° ${c.reference}` : "")));
+}
+function afficherTrousseau() {
+  $("#trousseau").replaceChildren(...S.etat.contrats.map(objetContrat), el("button", { class: "ajouter-objet", type: "button", onclick: ajouterContrat }, "+ Ajouter une carte, une mutuelle ou une assurance"));
+}
+function afficherAnalyse() {
+  const { doublons, trous } = S.etat.analyse;
+  $("#doublons").replaceChildren(...(doublons.length ? doublons.map((d) => el("li", {}, el("b", {}, d.titre),
+    d.meilleur ? el("span", {}, `Le plus haut : ${d.meilleur}.`) : el("span", {}, "Couvert plusieurs fois."),
+    el("div", { class: "offres" }, d.offres.map((o) => el("em", { class: d.meilleur === `${o.fournisseur} ${o.contrat}` ? "meilleur" : "" }, `${o.fournisseur} : ${o.plafond || o.titre}`)))))
+    : [el("li", {}, el("span", {}, "Aucun doublon repéré."))]));
+  $("#trous").replaceChildren(...(trous.length ? trous.map((t) => el("li", {}, el("b", {}, t.titre), el("span", {}, t.texte))) : [el("li", {}, el("span", {}, "Rien de manquant repéré."))]));
+}
+function afficherNumeros(liste) {
+  const vus = new Map();
+  for (const { g, c } of liste) {
+    if (!g.contact || g.statut === "absent") continue;
+    for (const morceau of g.contact.split(" ; ")) {
+      const tels = telephones(morceau);
+      if (!tels.length) continue;
+      const cle = tels[0].replace(/\D/g, "");
+      if (!vus.has(cle)) vus.set(cle, { tel: tels[0], texte: morceau, qui: `${c.fournisseur} · ${c.nom}`, pour: new Set() });
+      vus.get(cle).pour.add(g.titre);
+    }
+  }
+  $("#numeros").replaceChildren(...[...vus.values()].map((n) => el("div", { class: "numero" }, el("b", {}, n.qui),
+    el("a", { href: `tel:${n.tel.replace(/[\s.]/g, "")}` }, n.tel), el("span", {}, n.texte.replace(n.tel, "").replace(/\s*:\s*$/, "").replace(/^[\s:,]+|[\s:,]+$/g, "")),
+    el("span", { style: "font-size:.85rem;color:var(--encre-3)" }, `Pour : ${[...n.pour].slice(0, 3).join(", ")}${n.pour.size > 3 ? "…" : ""}`))));
+}
+function afficherAVerifier(liste) {
+  $("#verifier").replaceChildren(...(liste.length ? liste.map(({ g, c }) => el("li", {},
+    el("div", {}, el("b", {}, g.titre), el("span", {}, `${c.fournisseur} · ${c.nom} — ${ORIGINE[g.statut]}`)),
+    el("div", { class: "actions-g" }, el("button", { class: "petit", type: "button", onclick: () => regler(g.id, { statut: "verifie" }, "Noté : vérifié") }, "Vérifié"),
+      el("button", { class: "petit", type: "button", onclick: () => regler(g.id, { statut: "absent" }, "Noté : pas dans ton contrat") }, "Absent"))))
+    : [el("li", {}, el("span", {}, "Tout est vérifié."))]));
+}
+
+// --- actions -------------------------------------------------------------------------------
+let minuteur;
+function annonce(t) { const x = $("#toast"); x.textContent = t; x.hidden = false; clearTimeout(minuteur); minuteur = setTimeout(() => { x.hidden = true; }, 3000); }
+async function regler(id, champs, message) {
+  try { await api(`/api/garanties/${id}`, { method: "PATCH", body: JSON.stringify(champs) }); if (message) annonce(message); await charger(); } catch (e) { annonce(e.message); }
+}
+function feuille(titre, ...contenu) {
+  $("#feuille-titre").textContent = titre;
+  $("#feuille-corps").replaceChildren(...contenu);
+  if (!$("#feuille").open) $("#feuille").showModal();
+}
+function ouvrirContrat(c) {
+  S.contrat = c.id; S.situation = null; S.recherche = ""; $("#recherche").value = "";
+  afficher();
+  $("#dossier").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function formulaireContrat(c) {
+  return el("form", { class: "bloc", style: "margin-top:16px;background:var(--creux)", onsubmit: async (ev) => {
+    ev.preventDefault();
+    const f = new FormData(ev.target);
+    try { await api(`/api/contrats/${c.id}`, { method: "PATCH", body: JSON.stringify({ reference: f.get("reference"), notes: f.get("notes") }) }); annonce("Contrat enregistré"); await charger(); }
+    catch (e) { annonce(e.message); }
+  } },
+    el("h3", {}, "Mes infos sur ce contrat"),
+    el("div", { class: "grille-2" },
+      el("label", { class: "champ" }, "Référence ou n° de contrat", el("input", { name: "reference", value: c.reference, maxlength: "80" })),
+      el("label", { class: "champ" }, "Notes", el("input", { name: "notes", value: c.notes, maxlength: "2000", placeholder: "Formule, options, date d'échéance…" }))),
+    el("div", { class: "actions-g" }, el("button", { class: "plein", type: "submit" }, "Enregistrer"),
+      el("button", { class: "petit", type: "button", onclick: () => editerGarantie(null, c) }, "+ Ajouter une garantie"),
+      el("button", { class: "petit", type: "button", onclick: () => { S.contrat = null; afficher(); } }, "Fermer ce contrat"),
+      el("button", { class: "danger", type: "button", onclick: async () => { if (!confirm(`Retirer « ${c.nom} » du trousseau ?`)) return; await api(`/api/contrats/${c.id}`, { method: "DELETE" }); S.contrat = null; annonce("Contrat retiré"); await charger(); } }, "Retirer ce contrat")));
+}
+// Un contrat ajouté s'ouvre aussitôt : on voit ses garanties, ou on lui en ajoute
+async function ouvrirNouveau(id, message) {
+  $("#feuille").close();
+  S.contrat = id; S.situation = null; S.recherche = ""; $("#recherche").value = "";
+  annonce(message);
+  await charger();
+  $("#dossier").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function ajouterContrat() {
+  const deja = new Set(S.etat.contrats.map((c) => c.produit));
+  const produits = S.etat.catalogue.filter((p) => !deja.has(p.cle));
+  feuille("Ajouter au trousseau",
+    produits.length ? el("p", {}, "Les contrats qu'Égide connaît déjà, avec leurs garanties :") : null,
+    produits.length ? el("div", { class: "choix-produits" }, produits.map((p) => el("button", { type: "button", onclick: async () => {
+      try { const { id } = await api("/api/contrats", { method: "POST", body: JSON.stringify({ profil: S.profil, produit: p.cle }) }); await ouvrirNouveau(id, `${p.nom} ajouté au trousseau`); }
+      catch (e) { annonce(e.message); } } },
+      el("b", {}, `${p.fournisseur} · ${p.nom}`), el("span", {}, `${p.garanties} garanties`)))) : null,
+    el("form", { class: "bloc", onsubmit: async (ev) => {
+      ev.preventDefault();
+      const f = new FormData(ev.target);
+      try { const { id } = await api("/api/contrats", { method: "POST", body: JSON.stringify({ profil: S.profil, nom: f.get("nom"), fournisseur: f.get("fournisseur"), type: f.get("type") }) }); await ouvrirNouveau(id, "Ajouté au trousseau : ajoute-lui ses garanties"); }
+      catch (e) { annonce(e.message); }
+    } },
+      el("h3", {}, "Un autre contrat"),
+      el("div", { class: "grille-2" },
+        el("label", { class: "champ" }, "Organisme", el("input", { name: "fournisseur", placeholder: "Société Générale, MAIF…", maxlength: "80" })),
+        el("label", { class: "champ" }, "Nom du contrat", el("input", { name: "nom", placeholder: "Carte Gold, assurance scolaire…", required: true, maxlength: "80" }))),
+      el("label", { class: "champ" }, "Genre", el("select", { name: "type" }, [["carte", "Carte bancaire"], ["mutuelle", "Mutuelle"], ["assurance", "Assurance"], ["regime", "Régime santé"], ["statut", "Avantages d'employeur ou de statut"]].map(([v, t]) => el("option", { value: v }, t)))),
+      el("button", { class: "plein", type: "submit" }, "Ajouter")));
+}
+function editerGarantie(g, c) {
+  const nouvelle = !g;
+  g = g || { titre: "", resume: "", plafond: "", franchise: "", conditions: "", demarche: "", contact: "", delai: "", notes: "", situations: [] };
+  feuille(nouvelle ? `Nouvelle garantie · ${c.nom}` : "Corriger la garantie", el("form", { class: "f-corps", style: "padding:0", onsubmit: async (ev) => {
+    ev.preventDefault();
+    const f = new FormData(ev.target);
+    const champs = Object.fromEntries(["titre", "resume", "plafond", "franchise", "conditions", "demarche", "contact", "delai", "notes"].map((k) => [k, String(f.get(k) || "").trim()]));
+    champs.situations = f.getAll("situations");
+    try {
+      if (nouvelle) await api("/api/garanties", { method: "POST", body: JSON.stringify({ contrat: c.id, ...champs }) });
+      else await api(`/api/garanties/${g.id}`, { method: "PATCH", body: JSON.stringify(champs) });
+      $("#feuille").close(); annonce("Garantie enregistrée"); await charger();
+    } catch (e) { annonce(e.message); }
+  } },
+    el("label", { class: "champ" }, "Garantie", el("input", { name: "titre", value: g.titre, required: true, maxlength: "120" })),
+    el("label", { class: "champ" }, "Ce qu'elle couvre", el("textarea", { name: "resume" }, g.resume)),
+    el("div", { class: "grille-2" },
+      el("label", { class: "champ" }, "Plafond", el("input", { name: "plafond", value: g.plafond })),
+      el("label", { class: "champ" }, "Franchise", el("input", { name: "franchise", value: g.franchise }))),
+    el("label", { class: "champ" }, "Condition", el("input", { name: "conditions", value: g.conditions })),
+    el("label", { class: "champ" }, "Comment faire", el("textarea", { name: "demarche" }, g.demarche)),
+    el("div", { class: "grille-2" },
+      el("label", { class: "champ" }, "Qui appeler", el("input", { name: "contact", value: g.contact })),
+      el("label", { class: "champ" }, "Délai pour déclarer", el("input", { name: "delai", value: g.delai }))),
+    el("div", { class: "champ" }, "Dans quelles situations", el("div", { class: "situations-choix" }, S.etat.situations.map(([k, t]) =>
+      el("label", {}, el("input", { type: "checkbox", name: "situations", value: k, checked: g.situations.includes(k) || null }), t)))),
+    el("label", { class: "champ" }, "Ta note", el("textarea", { name: "notes" }, g.notes)),
+    el("div", { class: "actions-g" }, el("button", { class: "plein", type: "submit" }, "Enregistrer"),
+      !nouvelle ? el("button", { class: "danger", type: "button", onclick: async () => { if (!confirm("Supprimer cette garantie ?")) return; await api(`/api/garanties/${g.id}`, { method: "DELETE" }); $("#feuille").close(); annonce("Garantie supprimée"); await charger(); } }, "Supprimer") : null)));
+}
+
+// --- événements ---------------------------------------------------------------------------
+$("#profil").addEventListener("change", (ev) => { S.profil = Number(ev.target.value); S.situation = null; S.contrat = null; localSet("profil", S.profil); charger(); });
+$("#nouveau-profil").addEventListener("click", () => feuille("Nouveau profil", el("form", { class: "f-corps", style: "padding:0", onsubmit: async (ev) => {
+  ev.preventDefault();
+  const nom = String(new FormData(ev.target).get("nom") || "").trim();
+  const { id } = await api("/api/profils", { method: "POST", body: JSON.stringify({ nom }) });
+  S.profil = id; $("#feuille").close(); annonce(`Profil « ${nom} » créé : ajoute ses contrats dans le trousseau`); await charger();
+} }, el("p", {}, "Un profil par personne : toi, un proche… Un prénom ou un surnom suffit."),
+  el("label", { class: "champ" }, "Nom du profil", el("input", { name: "nom", required: true, maxlength: "60", placeholder: "Moi" })),
+  el("button", { class: "plein", type: "submit" }, "Créer"))));
+let attente;
+$("#recherche").addEventListener("input", (ev) => { clearTimeout(attente); attente = setTimeout(() => { S.recherche = ev.target.value.trim(); S.situation = null; S.contrat = null; afficher(); }, 150); });
+$("#feuille").addEventListener("click", (ev) => { if (ev.target === $("#feuille") || ev.target.closest("[data-fermer]")) $("#feuille").close(); });
+charger().catch((e) => { $("#dossier").replaceChildren(el("h2", {}, "Égide ne répond pas"), el("p", { class: "sous" }, e.message)); });
+</script>
+</body>
+</html>
