@@ -3,16 +3,20 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import re
 import threading
 import time
+import unicodedata
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from . import catalogue
-from .base import Base, amorcer
+from .base import ECHEANCES, Base, amorcer
 
 RACINE = Path(__file__).resolve().parents[2]
 STATIQUE = Path(__file__).parent / "static"
@@ -44,6 +48,44 @@ class ReglageContrat(BaseModel):
     fournisseur: str | None = Field(None, max_length=80)
     reference: str | None = Field(None, max_length=80)
     notes: str | None = Field(None, max_length=2000)
+    echeance: str | None = Field(None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")     # vide : pas d'échéance
+    echeance_sorte: Literal["renouvellement", "fin", "carte", "autre", ""] | None = None
+    preavis: int | None = Field(None, ge=0, le=365)
+
+
+def _ics(texte: str) -> str:
+    return texte.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
+
+def agenda(c: dict) -> str:
+    """Un événement d'agenda (iCalendar) pour l'échéance d'un contrat : le jour où il faut agir, avec deux rappels."""
+    jour = date.fromisoformat(c["echeance"])
+    sorte = ECHEANCES.get(c["echeance_sorte"] or "autre", "Échéance")
+    action = jour - timedelta(days=c["preavis"] or 0)
+    qui = f"{c['fournisseur']} · {c['nom']}" if c["fournisseur"] else c["nom"]
+    if c["preavis"]:
+        titre = f"Dernier jour pour résilier ou renégocier : {qui}"
+        texte = f"{sorte} le {jour:%d/%m/%Y}, préavis de {c['preavis']} jours."
+    else:
+        titre = f"{sorte} : {qui}"
+        texte = f"{sorte} le {jour:%d/%m/%Y}."
+    if c["reference"]:
+        texte += f" Référence : {c['reference']}."
+    lignes = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Egide//echeances//FR", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+              f"UID:egide-contrat-{c['id']}-{jour:%Y%m%d}@egide.local",
+              f"DTSTAMP:{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}",
+              f"DTSTART;VALUE=DATE:{action:%Y%m%d}", f"DTEND;VALUE=DATE:{action + timedelta(days=1):%Y%m%d}",
+              f"SUMMARY:{_ics(titre)}", f"DESCRIPTION:{_ics(texte)}"]
+    if c["echeance_sorte"] == "renouvellement":
+        lignes.append("RRULE:FREQ=YEARLY")                     # une reconduction revient chaque année
+    for avance, mot in (("P30D", "dans un mois"), ("P7D", "dans une semaine")):
+        lignes += ["BEGIN:VALARM", "ACTION:DISPLAY", f"TRIGGER:-{avance}", f"DESCRIPTION:{_ics(titre + ', ' + mot)}", "END:VALARM"]
+    lignes += ["END:VEVENT", "END:VCALENDAR"]
+    return "\r\n".join(lignes) + "\r\n"
+
+
+def _fichier(nom: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode().lower()).strip("-") or "contrat"
 
 
 class Garantie(BaseModel):
@@ -181,8 +223,23 @@ def creer_app(dossier: Path = RACINE, amorce: bool = True) -> FastAPI:
     def regler_contrat(ident: int, r: ReglageContrat):
         if not base.contrat(ident):
             raise HTTPException(404, "Contrat inconnu")
+        if r.echeance:
+            try:
+                date.fromisoformat(r.echeance)
+            except ValueError:
+                raise HTTPException(422, "Date d'échéance impossible") from None
         base.modifier_contrat(ident, **r.model_dump(exclude_none=True))
         return {"ok": True}
+
+    @app.get("/api/contrats/{ident}/echeance.ics")
+    def echeance_agenda(ident: int):
+        c = base.contrat(ident)
+        if not c:
+            raise HTTPException(404, "Contrat inconnu")
+        if not c["echeance"]:
+            raise HTTPException(404, "Ce contrat n'a pas d'échéance")
+        return Response(agenda(c), media_type="text/calendar; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="echeance-{_fichier(c["nom"])}.ics"'})
 
     @app.delete("/api/contrats/{ident}")
     def supprimer_contrat(ident: int):

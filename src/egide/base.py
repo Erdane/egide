@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS contrats (
     produit TEXT NOT NULL DEFAULT '',          -- clé du catalogue, vide pour un contrat ajouté à la main
     nom TEXT NOT NULL, fournisseur TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'assurance',
     couleur TEXT NOT NULL DEFAULT '', reference TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
-    source_url TEXT NOT NULL DEFAULT '', source_date TEXT NOT NULL DEFAULT '', ajoute_le REAL NOT NULL
+    source_url TEXT NOT NULL DEFAULT '', source_date TEXT NOT NULL DEFAULT '', ajoute_le REAL NOT NULL,
+    echeance TEXT NOT NULL DEFAULT '',         -- AAAA-MM-JJ : renouvellement, fin de contrat, expiration de la carte
+    echeance_sorte TEXT NOT NULL DEFAULT '', preavis INTEGER NOT NULL DEFAULT 0   -- jours pour résilier avant l'échéance
 );
 CREATE TABLE IF NOT EXISTS droits (
     id INTEGER PRIMARY KEY,
@@ -36,7 +38,8 @@ CREATE TABLE IF NOT EXISTS droits (
     valeur REAL, notes TEXT NOT NULL DEFAULT '', ordre INTEGER NOT NULL DEFAULT 0
 );
 """
-CHAMPS_CONTRAT = {"nom", "fournisseur", "type", "reference", "notes"}
+CHAMPS_CONTRAT = {"nom", "fournisseur", "type", "reference", "notes", "echeance", "echeance_sorte", "preavis"}
+ECHEANCES = {"renouvellement": "Renouvellement", "fin": "Fin du contrat", "carte": "Expiration de la carte", "autre": "Échéance"}
 CHAMPS_DROIT = {"titre", "categorie", "situations", "resume", "plafond", "franchise", "conditions", "demarche", "contact",
                 "delai", "statut", "notes", "theme"}
 
@@ -49,6 +52,11 @@ class Base:
         self.verrou = threading.RLock()
         with self.verrou:
             self.cx.executescript(SCHEMA)
+            colonnes = {l[1] for l in self.cx.execute("PRAGMA table_info(contrats)")}
+            for nom, type_ in (("echeance", "TEXT NOT NULL DEFAULT ''"), ("echeance_sorte", "TEXT NOT NULL DEFAULT ''"),
+                               ("preavis", "INTEGER NOT NULL DEFAULT 0")):
+                if nom not in colonnes:                       # base créée avant les échéances
+                    self.cx.execute(f"ALTER TABLE contrats ADD COLUMN {nom} {type_}")
 
     def _x(self, sql, params=()):
         with self.verrou:

@@ -2,6 +2,10 @@
 
 Une ligne par commit, écrite par Claude à partir des changements.
 
+## 2026-11-22
+
+- Ajoute gestion des échéances exportables vers ton agenda
+
 ## 2026-11-21
 
 - Crée un dossier vide au démarrage plutôt qu'un profil pré-rempli

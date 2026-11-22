@@ -176,6 +176,20 @@ a { color: inherit; }
 .numero span { font-size: .96rem; }
 .numero a { font-family: var(--affiche); font-weight: 700; font-size: 1.15rem; text-decoration: none; letter-spacing: -.01em; }
 .a-verifier { background: var(--papier); border-radius: 18px; padding: 6px 20px; }
+/* les échéances : le jour où agir, en grand ; le laiton pour ce qui arrive dans le mois */
+.echeances { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.echeance { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 14px; align-items: center; background: var(--papier); border-radius: 16px; padding: 12px 16px; border-left: 6px solid var(--trait); }
+.echeance.proche { border-left-color: var(--laiton); background: var(--laiton-clair); }
+.echeance.passee { opacity: .6; }
+.echeance .quand { font-family: var(--affiche); font-weight: 800; font-size: 1.35rem; line-height: 1.05; color: var(--bouteille); }
+.echeance .quand small { display: block; font-family: var(--texte); font-weight: 700; font-size: .8rem; color: var(--encre-2); }
+.echeance b { display: block; }
+.echeance span { display: block; font-size: .9rem; color: var(--encre-2); }
+.echeance .boutons { display: flex; flex-wrap: wrap; gap: 6px; justify-content: end; }
+.echeance a.petit { text-decoration: none; }
+.echeances-vide { background: var(--papier); border-radius: 16px; padding: 16px 18px; color: var(--encre-2); margin: 0; }
+.badge-echeance { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 999px; background: var(--laiton); color: #0f3d2e; font-weight: 700; font-size: .8rem; }
+@media (max-width: 640px) { .echeance { grid-template-columns: 78px minmax(0, 1fr); } .echeance .boutons { grid-column: 1 / -1; justify-content: start; } }
 .a-verifier li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--trait); }
 .a-verifier li:last-child { border-bottom: 0; }
 .a-verifier ul { margin: 0; padding: 0; list-style: none; }
@@ -252,6 +266,12 @@ dialog::backdrop { background: var(--voile); }
     <h2 id="t-trousseau">Le trousseau</h2>
     <p class="sous" id="sous-trousseau">Les contrats que tu as. Touche-en un pour voir tout ce qu'il couvre, noter sa référence ou corriger une garantie.</p>
     <div class="trousseau" id="trousseau"></div>
+  </section>
+
+  <section class="section" aria-labelledby="t-echeances">
+    <h2 id="t-echeances">Les échéances</h2>
+    <p class="sous">Renouvellements, fins de contrat, cartes qui expirent : le jour où il faut agir, préavis compris. Ajoute-les à ton agenda pour en être prévenu un mois puis une semaine avant.</p>
+    <div id="echeances"></div>
   </section>
 
   <section class="section" aria-labelledby="t-analyse">
@@ -387,6 +407,7 @@ function afficher() {
   }));
   afficherDossier(liste);
   afficherTrousseau();
+  afficherEcheances();
   afficherAnalyse();
   afficherNumeros(liste);
   afficherAVerifier(aVerifier);
@@ -466,7 +487,38 @@ function objetContrat(c) {
     : el("div", { class: `attestation ${cls}` }, el("span", { class: "t" }, { mutuelle: "Mutuelle", regime: "Régime santé", assurance: "Attestation d'assurance", statut: "Statut" }[c.type] || "Contrat"),
         el("div", {}, el("div", { class: "f" }, c.fournisseur), el("div", { class: "n" }, c.nom)), el("span", { class: "sceau" }, icone("bouclier", 22)));
   return el("button", { class: "objet", type: "button", onclick: () => ouvrirContrat(c) }, visuel,
-    el("span", { class: "infos" }, el("span", {}, el("b", {}, `${n} garantie${n > 1 ? "s" : ""}`), v ? ` · ${v} à vérifier` : ""), el("span", {}, c.reference ? `n° ${c.reference}` : "")));
+    el("span", { class: "infos" }, el("span", {}, el("b", {}, `${n} garantie${n > 1 ? "s" : ""}`), v ? ` · ${v} à vérifier` : "",
+      c.echeance && joursAvant(jourAction(c)) >= 0 && joursAvant(jourAction(c)) <= 60 ? el("span", { class: "badge-echeance" }, `échéance ${dansCombien(joursAvant(jourAction(c)))}`) : null),
+      el("span", {}, c.reference ? `n° ${c.reference}` : "")));
+}
+const SORTES_ECHEANCE = { renouvellement: "Renouvellement", fin: "Fin du contrat", carte: "Expiration de la carte", autre: "Autre échéance" };
+const JOUR_MS = 86400000;
+function jourAction(c) {                       // le jour où agir : l'échéance, moins le préavis
+  const d = new Date(`${c.echeance}T00:00:00`);
+  d.setDate(d.getDate() - (c.preavis || 0));
+  return d;
+}
+function joursAvant(d) {
+  const auj = new Date(); auj.setHours(0, 0, 0, 0);
+  return Math.round((d - auj) / JOUR_MS);
+}
+const dateCourte = (d) => new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" }).format(d);
+function dansCombien(n) { return n === 0 ? "aujourd'hui" : n === 1 ? "demain" : n > 0 ? `dans ${n} jours` : `passée de ${-n} jour${n < -1 ? "s" : ""}`; }
+function afficherEcheances() {
+  const liste = S.etat.contrats.filter((c) => c.echeance).map((c) => ({ c, action: jourAction(c) }))
+    .sort((a, b) => a.action - b.action);
+  $("#echeances").replaceChildren(liste.length ? el("ul", { class: "echeances" }, liste.map(({ c, action }) => {
+    const n = joursAvant(action), fin = new Date(`${c.echeance}T00:00:00`);
+    return el("li", { class: "echeance" + (n < 0 ? " passee" : n <= 30 ? " proche" : "") },
+      el("p", { class: "quand", style: "margin:0" }, dateCourte(action).replace(/ \d{4}$/, ""), el("small", {}, dansCombien(n))),
+      el("div", { style: "min-width:0" },
+        el("b", {}, `${c.fournisseur ? c.fournisseur + " · " : ""}${c.nom}`),
+        el("span", {}, c.preavis ? `Résilier ou renégocier avant le ${dateCourte(action)} : ${(SORTES_ECHEANCE[c.echeance_sorte] || "échéance").toLowerCase()} le ${dateCourte(fin)}, préavis de ${c.preavis} jours.`
+          : `${SORTES_ECHEANCE[c.echeance_sorte] || "Échéance"} le ${dateCourte(fin)}.`)),
+      el("div", { class: "boutons" },
+        el("a", { class: "petit", href: `/api/contrats/${c.id}/echeance.ics`, download: "" }, "Ajouter à mon agenda"),
+        el("button", { class: "petit", type: "button", onclick: () => ouvrirContrat(c) }, "Modifier")));
+  })) : el("p", { class: "echeances-vide" }, "Aucune échéance notée. Ouvre un contrat du trousseau et indique sa date : elle apparaîtra ici, avec un rappel pour ton agenda."));
 }
 function afficherTrousseau() {
   $("#trousseau").replaceChildren(...S.etat.contrats.map(objetContrat), el("button", { class: "ajouter-objet", type: "button", onclick: ajouterContrat }, "+ Ajouter une carte, une mutuelle ou une assurance"));
@@ -523,13 +575,21 @@ function formulaireContrat(c) {
   return el("form", { class: "bloc", style: "margin-top:16px;background:var(--creux)", onsubmit: async (ev) => {
     ev.preventDefault();
     const f = new FormData(ev.target);
-    try { await api(`/api/contrats/${c.id}`, { method: "PATCH", body: JSON.stringify({ reference: f.get("reference"), notes: f.get("notes") }) }); annonce("Contrat enregistré"); await charger(); }
+    try {
+      await api(`/api/contrats/${c.id}`, { method: "PATCH", body: JSON.stringify({ reference: f.get("reference"), notes: f.get("notes"),
+        echeance: f.get("echeance") || "", echeance_sorte: f.get("echeance") ? f.get("echeance_sorte") : "", preavis: Number(f.get("preavis") || 0) }) });
+      annonce("Contrat enregistré"); await charger();
+    }
     catch (e) { annonce(e.message); }
   } },
     el("h3", {}, "Mes infos sur ce contrat"),
     el("div", { class: "grille-2" },
       el("label", { class: "champ" }, "Référence ou n° de contrat", el("input", { name: "reference", value: c.reference, maxlength: "80" })),
-      el("label", { class: "champ" }, "Notes", el("input", { name: "notes", value: c.notes, maxlength: "2000", placeholder: "Formule, options, date d'échéance…" }))),
+      el("label", { class: "champ" }, "Notes", el("input", { name: "notes", value: c.notes, maxlength: "2000", placeholder: "Formule, options…" })),
+      el("label", { class: "champ" }, "Échéance", el("input", { name: "echeance", type: "date", value: c.echeance || "" })),
+      el("label", { class: "champ" }, "C'est", el("select", { name: "echeance_sorte" },
+        Object.entries(SORTES_ECHEANCE).map(([k, v]) => el("option", { value: k, selected: (c.echeance_sorte || (c.type === "carte" ? "carte" : "renouvellement")) === k || null }, v)))),
+      el("label", { class: "champ" }, "Préavis pour résilier, en jours", el("input", { name: "preavis", type: "number", min: "0", max: "365", inputmode: "numeric", value: c.preavis || "", placeholder: "0 si aucun" }))),
     el("div", { class: "actions-g" }, el("button", { class: "plein", type: "submit" }, "Enregistrer"),
       el("button", { class: "petit", type: "button", onclick: () => editerGarantie(null, c) }, "+ Ajouter une garantie"),
       el("button", { class: "petit", type: "button", onclick: () => { S.contrat = null; afficher(); } }, "Fermer ce contrat"),

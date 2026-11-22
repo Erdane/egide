@@ -119,3 +119,45 @@ def test_profil_contrat_et_garantie_ajoutes(client):
     assert perso["statut"] == "perso" and perso["situations"] == ["carte"]
     client.delete(f"/api/contrats/{cid}")
     assert len(client.get(f"/api/etat?profil={pid}").json()["contrats"]) == 1
+
+
+def test_echeance_et_agenda(client):
+    e = client.get("/api/etat").json()
+    c = e["contrats"][0]
+    assert c["echeance"] == "" and c["preavis"] == 0
+    assert client.get(f"/api/contrats/{c['id']}/echeance.ics").status_code == 404           # pas encore d'échéance
+    assert client.patch(f"/api/contrats/{c['id']}", json={"echeance": "31/12/2026"}).status_code == 422
+    assert client.patch(f"/api/contrats/{c['id']}", json={"preavis": 400}).status_code == 422
+    assert client.patch(f"/api/contrats/{c['id']}", json={"echeance": "2027-13-45"}).status_code == 422
+    r = client.patch(f"/api/contrats/{c['id']}", json={"echeance": "2027-03-01", "echeance_sorte": "renouvellement", "preavis": 60,
+                                                         "reference": "Contrat; n°12,3"})
+    assert r.status_code == 200
+    c = next(x for x in client.get("/api/etat").json()["contrats"] if x["id"] == c["id"])
+    assert (c["echeance"], c["echeance_sorte"], c["preavis"]) == ("2027-03-01", "renouvellement", 60)
+    r = client.get(f"/api/contrats/{c['id']}/echeance.ics")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/calendar")
+    assert r.headers["content-disposition"].startswith('attachment; filename="echeance-') and r.headers["content-disposition"].endswith('.ics"')
+    texte = r.text
+    assert "DTSTART;VALUE=DATE:20261231" in texte                     # 1er mars 2027 moins 60 jours : le jour où agir
+    assert "SUMMARY:Dernier jour pour résilier ou renégocier" in texte and "RRULE:FREQ=YEARLY" in texte
+    assert texte.count("BEGIN:VALARM") == 2 and "TRIGGER:-P30D" in texte and "TRIGGER:-P7D" in texte
+    assert "Contrat\; n°12\\,3" in texte and texte.endswith("END:VCALENDAR\r\n") and "\r\n" in texte
+    client.patch(f"/api/contrats/{c['id']}", json={"echeance": "", "echeance_sorte": "", "preavis": 0})
+    assert client.get(f"/api/contrats/{c['id']}/echeance.ics").status_code == 404           # effacée
+
+
+def test_echeance_d_une_carte_sans_preavis(client):
+    c = client.get("/api/etat").json()["contrats"][0]
+    client.patch(f"/api/contrats/{c['id']}", json={"echeance": "2028-09-30", "echeance_sorte": "carte"})
+    texte = client.get(f"/api/contrats/{c['id']}/echeance.ics").text
+    assert "DTSTART;VALUE=DATE:20280930" in texte and "SUMMARY:Expiration de la carte" in texte and "RRULE" not in texte
+
+
+def test_les_anciennes_bases_recoivent_les_echeances(tmp_path):
+    import sqlite3
+    from egide.base import Base
+    base = Base(tmp_path / "e.db")
+    base.cx.execute("ALTER TABLE contrats DROP COLUMN echeance")
+    base.cx.close()
+    base = Base(tmp_path / "e.db")
+    assert "echeance" in {l[1] for l in base.cx.execute("PRAGMA table_info(contrats)")}

@@ -15,7 +15,13 @@ quoi ? ». Pour savoir enfin ce que t'apportent tes contrats, garantie par garan
   l'information. Un cachet dit si c'est couvert, sous condition, à vérifier, une piste, vérifié ou non couvert.
 - **La recherche :** par mot (franchise, avocat, lentilles…).
 - **Le trousseau :** les contrats sous forme de cartes et d'attestations. En toucher un montre tout ce qu'il couvre,
-  avec sa référence, ses notes et l'ajout d'une garantie.
+  avec sa référence, ses notes, son échéance et l'ajout d'une garantie.
+- **Les échéances :** pour chaque contrat, une date (renouvellement, fin du contrat, expiration de la carte) et un
+  préavis de résiliation en jours. La section les range par jour où agir, c'est-à-dire l'échéance moins le préavis,
+  avec un compte à rebours. Elle met en évidence le mois qui vient, et le trousseau affiche un badge dans les 60 jours.
+  « Ajouter à mon agenda » télécharge un fichier `.ics` (`/api/contrats/<id>/echeance.ics`), que l'agenda du
+  téléphone ou d'Outlook importe. Il crée un événement le jour où agir, avec un rappel un mois puis une semaine avant,
+  répété chaque année pour un renouvellement.
 - **En double, et ce qui manque :**
   - les doublons : plusieurs contrats pour le même besoin, avec le plus haut des plafonds ;
   - les trous : garantie achats, prévoyance, protection juridique.
